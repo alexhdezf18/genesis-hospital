@@ -29,4 +29,9 @@ class Cita extends Model
     {
         return $this->belongsTo(Medico::class, 'medico_id');
     }
+
+    public function pago()
+    {
+        return $this->hasOne(Pago::class);
+    }
 }

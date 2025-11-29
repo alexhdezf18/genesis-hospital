@@ -6,7 +6,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CitaController;
+use App\Http\Controllers\ConsultaController;
+use App\Http\Controllers\PagoController;
 
+// 1. Página de Bienvenida (Pública)
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -16,19 +20,39 @@ Route::get('/', function () {
     ]);
 });
 
+// 2. Dashboard Principal (Redirección inteligente)
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+// 3. Grupo de Rutas Protegidas (Requieren Login y Email Verificado)
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // --- Módulo de Usuarios ---
+    Route::get('/admin/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/admin/users', [UserController::class, 'store'])->name('users.store');
+
+    // --- Módulo de Citas ---
+    Route::get('/admin/citas', [CitaController::class, 'index'])->name('citas.index');
+    Route::post('/admin/citas', [CitaController::class, 'store'])->name('citas.store');
+
+    // --- Módulo de Medico ---
+    Route::get('/medico/atender/{cita}', [ConsultaController::class, 'create'])->name('consulta.create');
+    Route::post('/medico/atender', [ConsultaController::class, 'store'])->name('consulta.store');
+
+    // --- Módulo de Pago ---
+    Route::post('/pagos', [PagoController::class, 'store'])->name('pagos.store');
+
+    // --- Módulo de PDF ---
+    Route::get('/receta/{id}/pdf', [ConsultaController::class, 'downloadPdf'])->name('receta.pdf');
+});
+
+
+// 4. Grupo de Perfil (Estándar de Breeze)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/admin/users', [UserController::class, 'index'])->name('users.index');
-    Route::post('/admin/users', [UserController::class, 'store'])->name('users.store');
 });
 
 require __DIR__.'/auth.php';
