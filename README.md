@@ -1,59 +1,134 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🏥 Génesis Hospital - Sistema de Gestión Clínica Integral
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Laravel](https://img.shields.io/badge/backend-Laravel%2011-red)
+![React](https://img.shields.io/badge/frontend-React%2018-blue)
+![Inertia](https://img.shields.io/badge/adapter-Inertia.js-purple)
+![Tailwind](https://img.shields.io/badge/style-Tailwind%20CSS-teal)
 
-## About Laravel
+Plataforma SaaS (Software as a Service) diseñada para la administración moderna de clínicas y hospitales. Integra flujos operativos, médicos y financieros en una interfaz reactiva de alto rendimiento.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Características Principales
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 👨‍💼 Panel Administrativo (Business Intelligence)
 
-## Learning Laravel
+-   **Dashboard en Tiempo Real:** KPIs de pacientes, médicos e ingresos financieros.
+-   **Gráficas Interactivas:** Visualización de tendencias de ingresos y operatividad (Chart.js).
+-   **Gestión de Usuarios:** CRUD completo con asignación de roles y perfiles profesionales.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 🗓️ Gestión de Citas y Agenda
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+-   **Calendario Visual:** Interfaz interactiva (FullCalendar) para visualizar la ocupación mensual/semanal.
+-   **Validación de Conflictos:** El sistema impide agendar citas dobles automáticamente.
+-   **Notificaciones:** Envío automático de correos de confirmación al paciente.
 
-## Laravel Sponsors
+### 🩺 Módulo Médico (HCE)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+-   **Expediente Clínico Electrónico:** Historial completo del paciente accesible durante la consulta.
+-   **Consulta Digital:** Registro de anamnesis, diagnóstico (CIE-10) y tratamiento.
+-   **Archivos Adjuntos:** Capacidad para subir y visualizar estudios de laboratorio o radiografías.
 
-### Premium Partners
+### 👤 Portal del Paciente
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+-   **Autogestión:** Agendamiento de citas sin intermediarios.
+-   **Historial y Recetas:** Acceso a diagnósticos previos y descarga de **Recetas Médicas en PDF** oficiales.
 
-## Contributing
+### 💰 Finanzas y Caja
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+-   **Control de Ingresos:** Registro de pagos por consulta (Efectivo/Tarjeta).
+-   **Reportes:** Tablas de corte de caja exportables.
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🛠️ Stack Tecnológico
 
-## Security Vulnerabilities
+Este proyecto utiliza una arquitectura **Monolítica Moderna** (Modular Monolith) optimizada para velocidad de desarrollo y experiencia de usuario SPA (Single Page Application).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+-   **Backend:** PHP 8.2+, Laravel 11.
+-   **Frontend:** React.js, Tailwind CSS.
+-   **Comunicación:** Inertia.js (Evita la complejidad de una API REST completa).
+-   **Base de Datos:** MySQL 8.0.
+-   **Infraestructura Local:** Docker (Laravel Sail).
+-   **Extras:** DomPDF (Reportes), Chart.js (Gráficas), Mailpit (Testing de Correos).
 
-## License
+---
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 💻 Instalación y Despliegue Local
+
+Sigue estos pasos para levantar el proyecto en tu entorno local usando Docker.
+
+### Prerrequisitos
+
+-   Docker Desktop instalado y corriendo.
+-   Git.
+
+### Pasos
+
+1.  **Clonar el repositorio**
+
+    ```bash
+    git clone [https://github.com/TU_USUARIO/genesis-hospital.git](https://github.com/TU_USUARIO/genesis-hospital.git)
+    cd genesis-hospital
+    ```
+
+2.  **Instalar dependencias de Backend**
+
+    ```bash
+    docker run --rm \
+        -u "$(id -u):$(id -g)" \
+        -v "$(pwd):/var/www/html" \
+        -w /var/www/html \
+        laravelsail/php8.3-composer:latest \
+        composer install --ignore-platform-reqs
+    ```
+
+3.  **Configurar entorno**
+
+    ```bash
+    cp .env.example .env
+    # Ajustar DB_HOST=mysql y DB_PASSWORD=password en el archivo .env si es necesario
+    ```
+
+4.  **Levantar Contenedores**
+
+    ```bash
+    ./vendor/bin/sail up -d
+    ```
+
+5.  **Generar llave y Base de Datos (Semilla)**
+
+    ```bash
+    ./vendor/bin/sail artisan key:generate
+    ./vendor/bin/sail artisan migrate:fresh --seed
+    ```
+
+6.  **Instalar dependencias de Frontend y Compilar**
+
+    ```bash
+    npm install
+    npm run dev
+    ```
+
+7.  **¡Listo!**
+    Accede a: `http://localhost:8085`
+
+---
+
+## 🔐 Credenciales de Prueba
+
+El sistema incluye datos semilla (`DatabaseSeeder`) para pruebas rápidas:
+
+| Rol               | Email                | Password   |
+| :---------------- | :------------------- | :--------- |
+| **Admin**         | `admin@hospital.com` | `password` |
+| **Médico**        | `house@hospital.com` | `password` |
+| **Recepcionista** | `ana@hospital.com`   | `password` |
+| **Paciente**      | `pepe@gmail.com`     | `password` |
+
+---
+
+## 📄 Licencia
+
+Este proyecto es de código abierto bajo la licencia [MIT](https://opensource.org/licenses/MIT).
