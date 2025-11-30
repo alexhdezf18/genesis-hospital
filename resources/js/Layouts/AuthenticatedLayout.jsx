@@ -3,16 +3,62 @@ import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import { Link, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Agregamos useEffect
+import { Toaster, toast } from "react-hot-toast"; // Importamos la librería
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const { flash = {} } = usePage().props;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
 
+    // ESCUCHAMOS MENSAJES DE LARAVEL
+    useEffect(() => {
+        // El signo de interrogación ?. evita el error si flash es null
+        if (flash?.success) {
+            toast.success(flash.success, {
+                duration: 4000,
+                position: "bottom-center",
+                style: {
+                    background: "#10B981", // Verde esmeralda
+                    color: "#fff",
+                    fontWeight: "bold",
+                    borderRadius: "50px", // Bordes más redondos (estilo píldora)
+                    padding: "16px 24px", // Un poco más grande
+                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)", // Sombra elegante
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#10B981",
+                },
+            });
+        }
+        if (flash?.error) {
+            toast.error(flash.error, {
+                duration: 5000,
+                position: "bottom-center",
+                style: {
+                    background: "#EF4444", // Rojo
+                    color: "#fff",
+                    fontWeight: "bold",
+                    borderRadius: "50px",
+                    padding: "16px 24px",
+                    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)",
+                },
+                iconTheme: {
+                    primary: "#fff",
+                    secondary: "#EF4444",
+                },
+            });
+        }
+    }, [flash]);
+
     return (
         <div className="min-h-screen bg-gray-100">
+            {/* Componente que muestra las alertas */}
+            <Toaster />
+
             <nav className="border-b border-gray-100 bg-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
@@ -23,9 +69,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </Link>
                             </div>
 
-                            {/* --- MENÚ DE ESCRITORIO (PC) --- */}
+                            {/* --- MENÚ DE ESCRITORIO --- */}
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                {/* 1. Dashboard (Visible para todos) */}
                                 <NavLink
                                     href={route("dashboard")}
                                     active={route().current("dashboard")}
@@ -33,7 +78,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Inicio
                                 </NavLink>
 
-                                {/* 2. Opciones de ADMIN */}
                                 {user.role === "admin" && (
                                     <>
                                         <NavLink
@@ -51,7 +95,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </>
                                 )}
 
-                                {/* 3. Opciones de RECEPCIONISTA */}
                                 {user.role === "recepcionista" && (
                                     <NavLink
                                         href={route("citas.index")}
@@ -61,7 +104,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {/* 4. Opciones de PACIENTE */}
                                 {user.role === "paciente" && (
                                     <NavLink
                                         href={route("paciente.agendar")}
@@ -80,12 +122,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
-                                            >
+                                            <button className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none">
                                                 {user.name}
-
                                                 <svg
                                                     className="-me-0.5 ms-2 h-4 w-4"
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -101,7 +139,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             </button>
                                         </span>
                                     </Dropdown.Trigger>
-
                                     <Dropdown.Content>
                                         <Dropdown.Link
                                             href={route("profile.edit")}
@@ -120,7 +157,6 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
                         </div>
 
-                        {/* --- BOTÓN HAMBURGUESA (Móvil) --- */}
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
                                 onClick={() =>
@@ -164,7 +200,6 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
 
-                {/* --- MENÚ MÓVIL DESPLEGABLE --- */}
                 <div
                     className={
                         (showingNavigationDropdown ? "block" : "hidden") +
@@ -172,15 +207,12 @@ export default function AuthenticatedLayout({ header, children }) {
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
-                        {/* 1. Inicio (Para todos) */}
                         <ResponsiveNavLink
                             href={route("dashboard")}
                             active={route().current("dashboard")}
                         >
                             Inicio
                         </ResponsiveNavLink>
-
-                        {/* 2. Admin Móvil */}
                         {user.role === "admin" && (
                             <>
                                 <ResponsiveNavLink
@@ -197,8 +229,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 </ResponsiveNavLink>
                             </>
                         )}
-
-                        {/* 3. Recepcionista Móvil */}
                         {user.role === "recepcionista" && (
                             <ResponsiveNavLink
                                 href={route("citas.index")}
@@ -207,8 +237,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 Agenda y Citas
                             </ResponsiveNavLink>
                         )}
-
-                        {/* 4. Paciente Móvil */}
                         {user.role === "paciente" && (
                             <ResponsiveNavLink
                                 href={route("paciente.agendar")}
@@ -218,8 +246,6 @@ export default function AuthenticatedLayout({ header, children }) {
                             </ResponsiveNavLink>
                         )}
                     </div>
-
-                    {/* Opciones de Perfil (Móvil) */}
                     <div className="border-t border-gray-200 pb-1 pt-4">
                         <div className="px-4">
                             <div className="text-base font-medium text-gray-800">
@@ -229,7 +255,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 {user.email}
                             </div>
                         </div>
-
                         <div className="mt-3 space-y-1">
                             <ResponsiveNavLink href={route("profile.edit")}>
                                 Profile
