@@ -16,6 +16,7 @@ class HistorialMedico extends Model
         'sintomas',
         'diagnostico',
         'tratamiento',
+        'file_path', 
     ];
 
     // Relación con la Cita original

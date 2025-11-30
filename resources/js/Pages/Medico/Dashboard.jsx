@@ -1,5 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
+import { formatDate, formatTime } from "@/Utils/FormatDate";
 
 export default function MedicoDashboard({ auth, citas }) {
     return (
@@ -67,8 +68,8 @@ export default function MedicoDashboard({ auth, citas }) {
                                     {citas.map((cita) => (
                                         <tr key={cita.id}>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                                {cita.fecha_cita} <br />{" "}
-                                                {cita.hora_cita}
+                                                {formatDate(cita.fecha_cita)}{" "}
+                                                <br /> {cita.hora_cita}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 {cita.paciente.name}

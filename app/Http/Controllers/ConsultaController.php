@@ -8,20 +8,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\HistorialMedico;
 
 class ConsultaController extends Controller
 {
-    // 1. Mostrar la pantalla de atención (Formulario)
+    // Mostrar la pantalla de atención (Formulario)
     public function create($cita_id)
     {
-        // Buscamos la cita y cargamos datos del paciente
+        // Buscamos la cita actual
         $cita = Cita::with('paciente')->findOrFail($cita_id);
 
-        // TODO: Aquí podrías agregar validación para que solo EL médico dueño la vea
+        // Buscamos el historial ANTERIOR de este paciente
+        // Traemos también el nombre del médico que lo atendió esa vez
+        $historialPrevio = HistorialMedico::with('medico.user')
+            ->where('paciente_id', $cita->paciente_id)
+            ->latest() // Del más reciente al más antiguo
+            ->get();
 
         return Inertia::render('Medico/Atender', [
-            'cita' => $cita
+            'cita' => $cita,
+            'historialPrevio' => $historialPrevio // Enviamos la variable a React
         ]);
     }
 
@@ -33,12 +38,21 @@ class ConsultaController extends Controller
             'sintomas' => 'required|string',
             'diagnostico' => 'required|string',
             'tratamiento' => 'required|string',
+            'archivo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validación de archivo (Max 2MB)
         ]);
 
         $cita = Cita::findOrFail($request->cita_id);
 
         DB::transaction(function () use ($request, $cita) {
-            // A. Crear el historial médico
+            
+            // 1. Manejo del Archivo
+            $rutaArchivo = null;
+            if ($request->hasFile('archivo')) {
+                // Guardar en la carpeta 'historiales' dentro del disco 'public'
+                $rutaArchivo = $request->file('archivo')->store('historiales', 'public');
+            }
+
+            // 2. Crear historial con el archivo
             HistorialMedico::create([
                 'cita_id' => $cita->id,
                 'paciente_id' => $cita->paciente_id,
@@ -46,13 +60,14 @@ class ConsultaController extends Controller
                 'sintomas' => $request->sintomas,
                 'diagnostico' => $request->diagnostico,
                 'tratamiento' => $request->tratamiento,
+                'file_path' => $rutaArchivo, // <--- Guardamos la ruta
             ]);
 
-            // B. Marcar la cita como completada
+            // 3. Cerrar cita
             $cita->update(['estado' => 'completada']);
         });
 
-        return redirect()->route('dashboard')->with('success', 'Consulta finalizada con éxito.');
+        return redirect()->route('dashboard')->with('success', 'Consulta finalizada y archivo guardado.');
     }
 
     public function downloadPdf($id)

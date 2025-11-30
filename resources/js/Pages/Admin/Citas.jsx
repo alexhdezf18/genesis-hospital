@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, useForm, router } from "@inertiajs/react";
+import { formatDate, formatTime } from "@/Utils/FormatDate";
 import Modal from "@/Components/Modal";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
@@ -27,6 +28,24 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                 reset();
             },
         });
+    };
+
+    const cambiarEstado = (id, nuevoEstado) => {
+        if (
+            confirm(
+                `¿Estás seguro de cambiar el estado a "${nuevoEstado.toUpperCase()}"?`
+            )
+        ) {
+            router.patch(
+                route("citas.updateStatus", id),
+                {
+                    estado: nuevoEstado,
+                },
+                {
+                    preserveScroll: true,
+                }
+            );
+        }
     };
 
     return (
@@ -70,10 +89,13 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                 {citas.data.map((cita) => (
                                     <tr key={cita.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {cita.fecha_cita}{" "}
-                                            <span className="text-gray-500 text-sm ml-1">
-                                                {cita.hora_cita}
-                                            </span>
+                                            {/* Uso correcto de las funciones importadas */}
+                                            <div className="font-bold text-gray-900">
+                                                {formatDate(cita.fecha_cita)}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {formatTime(cita.hora_cita)}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {cita.paciente.name}
@@ -82,24 +104,74 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                             Dr. {cita.medico.user.name}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
+                                            {/* Badge de Estado Actual */}
                                             <span
-                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full mb-1
                                                 ${
                                                     cita.estado === "pendiente"
                                                         ? "bg-yellow-100 text-yellow-800"
                                                         : cita.estado ===
                                                           "completada"
                                                         ? "bg-green-100 text-green-800"
-                                                        : "bg-gray-100"
+                                                        : cita.estado ===
+                                                          "confirmada"
+                                                        ? "bg-blue-100 text-blue-800"
+                                                        : "bg-red-100 text-red-800"
                                                 }`}
                                             >
                                                 {cita.estado.toUpperCase()}
                                             </span>
+
+                                            {/* Botones de Acción (Solo si no está completada/cancelada) */}
+                                            {[
+                                                "pendiente",
+                                                "confirmada",
+                                            ].includes(cita.estado) && (
+                                                <div className="flex space-x-2 mt-1">
+                                                    {/* Botón Confirmar */}
+                                                    {cita.estado !==
+                                                        "confirmada" && (
+                                                        <button
+                                                            onClick={() =>
+                                                                cambiarEstado(
+                                                                    cita.id,
+                                                                    "confirmada"
+                                                                )
+                                                            }
+                                                            className="text-xs text-blue-600 hover:text-blue-900 font-bold border border-blue-200 px-2 py-1 rounded hover:bg-blue-50"
+                                                            title="Confirmar asistencia"
+                                                        >
+                                                            ✓ Confirmar
+                                                        </button>
+                                                    )}
+
+                                                    {/* Botón Cancelar */}
+                                                    <button
+                                                        onClick={() =>
+                                                            cambiarEstado(
+                                                                cita.id,
+                                                                "cancelada"
+                                                            )
+                                                        }
+                                                        className="text-xs text-red-600 hover:text-red-900 font-bold border border-red-200 px-2 py-1 rounded hover:bg-red-50"
+                                                        title="Cancelar cita"
+                                                    >
+                                                        ✕ Cancelar
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+
+                        {/* Mensaje si no hay citas */}
+                        {citas.data.length === 0 && (
+                            <div className="p-6 text-center text-gray-500">
+                                No hay citas registradas.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

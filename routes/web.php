@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Módulo de Citas ---
     Route::get('/admin/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/admin/citas', [CitaController::class, 'store'])->name('citas.store');
+    Route::patch('/citas/{id}/status', [CitaController::class, 'updateStatus'])->name('citas.updateStatus');
 
     // --- Módulo de Medico ---
     Route::get('/medico/atender/{cita}', [ConsultaController::class, 'create'])->name('consulta.create');
@@ -45,6 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- Módulo de PDF ---
     Route::get('/receta/{id}/pdf', [ConsultaController::class, 'downloadPdf'])->name('receta.pdf');
+
+    // --- Modulo de Paciente ---
+    Route::get('/mi-portal/agendar', [CitaController::class, 'createForPatient'])->name('paciente.agendar');
+    Route::post('/mi-portal/agendar', [CitaController::class, 'storeForPatient'])->name('paciente.store');
 });
 
 

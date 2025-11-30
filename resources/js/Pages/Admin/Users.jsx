@@ -7,8 +7,10 @@ import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
+import { router } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 
-export default function Users({ auth, users }) {
+export default function Users({ auth, users, filters }) {
     const [showModal, setShowModal] = useState(false);
 
     // useForm maneja los datos, el envío y los errores automáticamente
@@ -32,6 +34,18 @@ export default function Users({ auth, users }) {
         });
     };
 
+    const handleSearch = (e) => {
+        const value = e.target.value;
+        router.get(
+            route("users.index"),
+            { search: value }, // Enviamos el parámetro 'search'
+            {
+                preserveState: true, // No perder el estado (como el modal abierto)
+                replace: true, // No llenar el historial del navegador
+            }
+        );
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -45,8 +59,19 @@ export default function Users({ auth, users }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Botón Crear */}
-                    <div className="flex justify-end mb-4">
+                    {/* BARRA DE HERRAMIENTAS (Búsqueda + Botón) */}
+                    <div className="flex justify-between items-center mb-4">
+                        {/* Input de Búsqueda */}
+                        <div className="w-1/3">
+                            <TextInput
+                                type="text"
+                                className="w-full"
+                                placeholder="Buscar por nombre o email..."
+                                defaultValue={filters.search} // Mantiene el texto si recargas
+                                onChange={handleSearch}
+                            />
+                        </div>
+
                         <PrimaryButton onClick={() => setShowModal(true)}>
                             + Nuevo Usuario
                         </PrimaryButton>
@@ -105,32 +130,31 @@ export default function Users({ auth, users }) {
                         </table>
 
                         {/* Paginación simple */}
-                        <div className="p-4">
-                            {users.links &&
-                                users.links.map((link, key) =>
-                                    link.url ? (
-                                        <a
-                                            key={key}
-                                            href={link.url}
-                                            className={`px-3 py-1 border rounded mr-1 ${
-                                                link.active
-                                                    ? "bg-blue-500 text-white"
-                                                    : ""
-                                            }`}
-                                            dangerouslySetInnerHTML={{
-                                                __html: link.label,
-                                            }}
-                                        />
-                                    ) : (
-                                        <span
-                                            key={key}
-                                            className="px-3 py-1 border rounded mr-1 text-gray-400"
-                                            dangerouslySetInnerHTML={{
-                                                __html: link.label,
-                                            }}
-                                        />
-                                    )
-                                )}
+                        <div className="p-4 bg-white border-t border-gray-200 flex justify-center">
+                            {users.links.map((link, key) =>
+                                link.url ? (
+                                    <Link
+                                        key={key}
+                                        href={link.url}
+                                        className={`px-3 py-1 border mx-1 rounded text-sm ${
+                                            link.active
+                                                ? "bg-blue-600 text-white border-blue-600"
+                                                : "text-gray-700 hover:bg-gray-100"
+                                        }`}
+                                        dangerouslySetInnerHTML={{
+                                            __html: link.label,
+                                        }}
+                                    />
+                                ) : (
+                                    <span
+                                        key={key}
+                                        className="px-3 py-1 border mx-1 rounded text-sm text-gray-400 cursor-not-allowed"
+                                        dangerouslySetInnerHTML={{
+                                            __html: link.label,
+                                        }}
+                                    />
+                                )
+                            )}
                         </div>
                     </div>
                 </div>

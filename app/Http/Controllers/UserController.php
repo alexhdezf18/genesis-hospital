@@ -11,15 +11,28 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    // 1. Mostrar la lista de usuarios
-    public function index()
+    public function index(Request $request)
     {
-        // Traemos usuarios paginados (10 por página) y ordenados
-        // 'with' es para traer datos del médico si existen (Eager Loading)
-        $users = User::with('medico')->latest()->paginate(10);
+        // Recuperamos el texto de búsqueda (si existe)
+        $search = $request->input('search');
+
+        // Construimos la consulta dinámica
+        $users = User::with('medico')
+            ->when($search, function ($query, $search) {
+                // Si hay búsqueda, filtramos por nombre O email
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString(); // Para mantener la búsqueda al cambiar de página
 
         return Inertia::render('Admin/Users', [
-            'users' => $users
+            'users' => $users,
+            // Enviamos el filtro actual para que el input no se borre
+            'filters' => $request->only(['search'])
         ]);
     }
 
