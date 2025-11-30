@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm, router } from "@inertiajs/react";
+import { Head, useForm, router, Link } from "@inertiajs/react";
 import { formatDate, formatTime } from "@/Utils/FormatDate";
 import Modal from "@/Components/Modal";
 import InputError from "@/Components/InputError";
@@ -8,7 +8,6 @@ import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
-import { Link } from "@inertiajs/react";
 
 export default function Citas({ auth, citas, pacientes, medicos }) {
     const [showModal, setShowModal] = useState(false);
@@ -62,11 +61,20 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="flex justify-end mb-4">
+                    {/* --- AQUÍ AGREGAMOS EL BOTÓN DE CALENDARIO --- */}
+                    <div className="flex justify-end mb-4 gap-2">
+                        <Link
+                            href={route("citas.calendar")}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition inline-flex items-center"
+                        >
+                            <span className="mr-2">📅</span> Ver Calendario
+                        </Link>
+
                         <PrimaryButton onClick={() => setShowModal(true)}>
                             + Agendar Cita
                         </PrimaryButton>
                     </div>
+                    {/* ------------------------------------------- */}
 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -90,7 +98,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                 {citas.data.map((cita) => (
                                     <tr key={cita.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {/* Uso correcto de las funciones importadas */}
                                             <div className="font-bold text-gray-900">
                                                 {formatDate(cita.fecha_cita)}
                                             </div>
@@ -105,7 +112,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                             Dr. {cita.medico.user.name}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {/* Badge de Estado Actual */}
                                             <span
                                                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full mb-1
                                                 ${
@@ -123,13 +129,11 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                                 {cita.estado.toUpperCase()}
                                             </span>
 
-                                            {/* Botones de Acción (Solo si no está completada/cancelada) */}
                                             {[
                                                 "pendiente",
                                                 "confirmada",
                                             ].includes(cita.estado) && (
                                                 <div className="flex space-x-2 mt-1">
-                                                    {/* Botón Confirmar */}
                                                     {cita.estado !==
                                                         "confirmada" && (
                                                         <button
@@ -146,7 +150,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                                                         </button>
                                                     )}
 
-                                                    {/* Botón Cancelar */}
                                                     <button
                                                         onClick={() =>
                                                             cambiarEstado(
@@ -167,7 +170,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                             </tbody>
                         </table>
 
-                        {/* Mensaje si no hay citas */}
                         {citas.data.length === 0 && (
                             <div className="p-6 text-center text-gray-500">
                                 No hay citas registradas.
@@ -184,7 +186,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                         Agendar Nueva Cita
                     </h2>
                     <form onSubmit={handleSubmit}>
-                        {/* Selección de Paciente */}
                         <div className="mt-4">
                             <InputLabel value="Paciente" />
                             <select
@@ -207,7 +208,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                             />
                         </div>
 
-                        {/* Selección de Médico */}
                         <div className="mt-4">
                             <InputLabel value="Médico" />
                             <select
@@ -230,7 +230,6 @@ export default function Citas({ auth, citas, pacientes, medicos }) {
                             />
                         </div>
 
-                        {/* Fecha y Hora */}
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <div>
                                 <InputLabel value="Fecha" />
