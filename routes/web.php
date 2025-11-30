@@ -4,11 +4,13 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+// Importamos todos los controladores
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CitaController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\MedicamentoController;
 
 // 1. Página de Bienvenida (Pública)
 Route::get('/', function () {
@@ -25,7 +27,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-// 3. Grupo de Rutas Protegidas (Requieren Login y Email Verificado)
+// 3. Grupo de Rutas Protegidas (Lógica del Negocio)
 Route::middleware(['auth', 'verified'])->group(function () {
     
     // --- Módulo de Usuarios ---
@@ -36,6 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/admin/citas', [CitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/status', [CitaController::class, 'updateStatus'])->name('citas.updateStatus');
+
+    // --- Módulo de Farmacia / Medicamentos (MOVIDO AQUÍ) ---
+    Route::get('/admin/farmacia', [MedicamentoController::class, 'index'])->name('medicamentos.index');
+    Route::post('/admin/farmacia', [MedicamentoController::class, 'store'])->name('medicamentos.store');
 
     // --- Módulo de Medico ---
     Route::get('/medico/atender/{cita}', [ConsultaController::class, 'create'])->name('consulta.create');
@@ -51,13 +57,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/mi-portal/agendar', [CitaController::class, 'createForPatient'])->name('paciente.agendar');
     Route::post('/mi-portal/agendar', [CitaController::class, 'storeForPatient'])->name('paciente.store');
 
-    // --- API interna para el calendario ---
+    // --- Calendario ---
     Route::get('/api/citas-calendar', [CitaController::class, 'getEvents'])->name('api.citas');
     Route::get('/admin/calendario', [CitaController::class, 'calendarView'])->name('citas.calendar');
 });
 
-
-// 4. Grupo de Perfil (Estándar de Breeze)
+// 4. Grupo de Perfil (Configuración de cuenta de usuario)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

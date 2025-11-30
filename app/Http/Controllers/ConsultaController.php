@@ -8,66 +8,99 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Medicamento;
 
 class ConsultaController extends Controller
 {
     // Mostrar la pantalla de atención (Formulario)
     public function create($cita_id)
     {
-        // Buscamos la cita actual
         $cita = Cita::with('paciente')->findOrFail($cita_id);
-
-        // Buscamos el historial ANTERIOR de este paciente
-        // Traemos también el nombre del médico que lo atendió esa vez
-        $historialPrevio = HistorialMedico::with('medico.user')
+        
+        $historialPrevio = HistorialMedico::with(['medico.user', 'medicamentos']) // <-- Ojo: traemos medicamentos previos también
             ->where('paciente_id', $cita->paciente_id)
-            ->latest() // Del más reciente al más antiguo
+            ->latest()
             ->get();
+
+        // Traemos solo medicamentos con stock disponible
+        $medicamentos = Medicamento::where('stock', '>', 0)->get();
 
         return Inertia::render('Medico/Atender', [
             'cita' => $cita,
-            'historialPrevio' => $historialPrevio // Enviamos la variable a React
+            'historialPrevio' => $historialPrevio,
+            'inventario' => $medicamentos // <--- Enviamos esto a React
         ]);
     }
 
     // 2. Guardar la consulta (Transacción)
     public function store(Request $request)
     {
+        // Validamos también el array de medicinas (si existe)
         $request->validate([
             'cita_id' => 'required|exists:citas,id',
             'sintomas' => 'required|string',
             'diagnostico' => 'required|string',
-            'tratamiento' => 'required|string',
-            'archivo' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Validación de archivo (Max 2MB)
+            'tratamiento' => 'required|string', // Instrucciones generales
+            'receta' => 'array|nullable', // Lista de medicinas seleccionadas
+            'receta.*.id' => 'exists:medicamentos,id',
+            'receta.*.cantidad' => 'integer|min:1',
         ]);
 
         $cita = Cita::findOrFail($request->cita_id);
 
         DB::transaction(function () use ($request, $cita) {
             
-            // 1. Manejo del Archivo
+            // 1. Guardar archivo (igual que antes)
             $rutaArchivo = null;
             if ($request->hasFile('archivo')) {
-                // Guardar en la carpeta 'historiales' dentro del disco 'public'
                 $rutaArchivo = $request->file('archivo')->store('historiales', 'public');
             }
 
-            // 2. Crear historial con el archivo
-            HistorialMedico::create([
+            // 2. Crear Historial
+            $historial = HistorialMedico::create([
                 'cita_id' => $cita->id,
                 'paciente_id' => $cita->paciente_id,
                 'medico_id' => $cita->medico_id,
                 'sintomas' => $request->sintomas,
                 'diagnostico' => $request->diagnostico,
                 'tratamiento' => $request->tratamiento,
-                'file_path' => $rutaArchivo, // <--- Guardamos la ruta
+                'file_path' => $rutaArchivo,
             ]);
 
-            // 3. Cerrar cita
+            // 3. PROCESAR MEDICAMENTOS 💊
+            if (!empty($request->receta)) {
+                foreach ($request->receta as $item) {
+                    // Buscamos la medicina
+                    $medicina = Medicamento::find($item['id']);
+                    
+                    if ($medicina) {
+                        // Forzamos que sean números enteros
+                        $cantidadSolicitada = (int) $item['cantidad'];
+                        $stockActual = (int) $medicina->stock;
+
+                        if ($stockActual >= $cantidadSolicitada) {
+                            // OPCIÓN A: Usar decrement (La elegante)
+                            // $medicina->decrement('stock', $cantidadSolicitada);
+
+                            // OPCIÓN B: Manual (La infalible)
+                            $medicina->stock = $stockActual - $cantidadSolicitada;
+                            $medicina->save(); // <--- Guardamos explícitamente
+
+                            // Guardar en tabla intermedia
+                            $historial->medicamentos()->attach($medicina->id, [
+                                'cantidad' => $cantidadSolicitada,
+                                'dosis' => $item['dosis'] ?? 'Según indicaciones'
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // 4. Cerrar cita
             $cita->update(['estado' => 'completada']);
         });
 
-        return redirect()->route('dashboard')->with('success', 'Consulta finalizada y archivo guardado.');
+        return redirect()->route('dashboard')->with('success', 'Consulta finalizada. Inventario actualizado.');
     }
 
     public function downloadPdf($id)

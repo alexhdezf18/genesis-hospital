@@ -30,4 +30,12 @@ class HistorialMedico extends Model
     {
         return $this->belongsTo(Medico::class);
     }
+
+    // Relación Muchos a Muchos con Medicamentos
+    public function medicamentos()
+    {
+        return $this->belongsToMany(Medicamento::class, 'historial_medicamento')
+            ->withPivot('cantidad', 'dosis')
+            ->withTimestamps();
+    }
 }

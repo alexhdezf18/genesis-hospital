@@ -92,6 +92,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                         >
                                             Gestión Citas
                                         </NavLink>
+                                        <NavLink
+                                            href={route("medicamentos.index")}
+                                            active={route().current(
+                                                "medicamentos.*"
+                                            )}
+                                        >
+                                            Farmacia
+                                        </NavLink>
                                     </>
                                 )}
 
@@ -226,6 +234,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                     active={route().current("citas.*")}
                                 >
                                     Gestión Citas
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route("medicamentos.index")}
+                                    active={route().current("medicamentos.*")}
+                                >
+                                    Farmacia
                                 </ResponsiveNavLink>
                             </>
                         )}

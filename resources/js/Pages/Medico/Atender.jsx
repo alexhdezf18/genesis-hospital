@@ -3,16 +3,52 @@ import { Head, useForm } from "@inertiajs/react";
 import PrimaryButton from "@/Components/PrimaryButton";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
-import { formatDate } from "@/Utils/FormatDate";
+import TextInput from "@/Components/TextInput";
+import { useState } from "react";
 
-export default function Atender({ auth, cita, historialPrevio }) {
+export default function Atender({ auth, cita, historialPrevio, inventario }) {
+    // Estado local para manejar la medicina que se está agregando actualmente
+    const [medicinaTemp, setMedicinaTemp] = useState({
+        id: "",
+        cantidad: 1,
+        dosis: "",
+    });
+
     const { data, setData, post, processing, errors } = useForm({
         cita_id: cita.id,
         sintomas: "",
         diagnostico: "",
-        tratamiento: "",
+        tratamiento: "", // Texto general
+        receta: [], // Array de objetos {id, cantidad, dosis}
         archivo: null,
     });
+
+    // Función para agregar medicina a la lista visual
+    const agregarMedicina = () => {
+        if (!medicinaTemp.id) return;
+
+        const medicinaReal = inventario.find((m) => m.id == medicinaTemp.id);
+
+        // Agregamos al array de "receta"
+        setData("receta", [
+            ...data.receta,
+            {
+                ...medicinaTemp,
+                nombre: medicinaReal.nombre,
+                codigo: medicinaReal.codigo,
+            },
+        ]);
+
+        // Limpiamos el input temporal
+        setMedicinaTemp({ id: "", cantidad: 1, dosis: "" });
+    };
+
+    // Función para quitar de la lista
+    const quitarMedicina = (index) => {
+        const nuevaReceta = [...data.receta];
+        nuevaReceta.splice(index, 1);
+        setData("receta", nuevaReceta);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -31,20 +67,19 @@ export default function Atender({ auth, cita, historialPrevio }) {
             <Head title="Consulta" />
 
             <div className="py-6 max-w-7xl mx-auto sm:px-6 lg:px-8">
-                {/* ENCABEZADO DEL PACIENTE */}
+                {/* ENCABEZADO (Igual que antes) */}
                 <div className="bg-white border-l-8 border-blue-600 p-6 mb-6 shadow rounded-r-lg flex justify-between items-center">
                     <div>
                         <h3 className="text-2xl font-bold text-gray-900">
                             {cita.paciente.name}
                         </h3>
                         <p className="text-gray-500">
-                            Motivo de hoy:{" "}
-                            {cita.observaciones || "Consulta General"}
+                            Motivo: {cita.observaciones || "Consulta General"}
                         </p>
                     </div>
                     <div className="text-right">
                         <div className="text-sm text-gray-400 uppercase tracking-wider">
-                            Folio Cita
+                            Folio
                         </div>
                         <div className="text-xl font-mono font-bold">
                             #{cita.id}
@@ -53,7 +88,7 @@ export default function Atender({ auth, cita, historialPrevio }) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* COLUMNA IZQUIERDA: FORMULARIO ACTUAL */}
+                    {/* COLUMNA IZQUIERDA: FORMULARIO */}
                     <div className="lg:col-span-2">
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border border-gray-100">
                             <h4 className="text-lg font-semibold text-blue-800 mb-6 border-b pb-2">
@@ -61,15 +96,14 @@ export default function Atender({ auth, cita, historialPrevio }) {
                             </h4>
 
                             <form onSubmit={handleSubmit}>
-                                {/* 1. Síntomas */}
-                                <div className="mb-6">
+                                {/* Campos de Texto (Síntomas, Diagnóstico) */}
+                                <div className="mb-4">
                                     <InputLabel
-                                        value="1. Anamnesis (Síntomas Subjetivos)"
+                                        value="1. Anamnesis / Síntomas"
                                         className="font-bold text-gray-700"
                                     />
                                     <textarea
-                                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-24 mt-1"
-                                        placeholder="¿Qué dolor presenta? ¿Desde cuándo?"
+                                        className="w-full border-gray-300 rounded-md shadow-sm h-20 mt-1"
                                         value={data.sintomas}
                                         onChange={(e) =>
                                             setData("sintomas", e.target.value)
@@ -78,15 +112,13 @@ export default function Atender({ auth, cita, historialPrevio }) {
                                     <InputError message={errors.sintomas} />
                                 </div>
 
-                                {/* 2. Diagnóstico */}
-                                <div className="mb-6">
+                                <div className="mb-4">
                                     <InputLabel
-                                        value="2. Diagnóstico (CIE-10)"
+                                        value="2. Diagnóstico"
                                         className="font-bold text-gray-700"
                                     />
                                     <textarea
-                                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-20 mt-1"
-                                        placeholder="Conclusión diagnóstica..."
+                                        className="w-full border-gray-300 rounded-md shadow-sm h-16 mt-1"
                                         value={data.diagnostico}
                                         onChange={(e) =>
                                             setData(
@@ -98,15 +130,126 @@ export default function Atender({ auth, cita, historialPrevio }) {
                                     <InputError message={errors.diagnostico} />
                                 </div>
 
-                                {/* 3. Tratamiento (ESTE ES EL QUE FALTABA) */}
-                                <div className="mb-6">
+                                {/* --- NUEVO: MÓDULO DE RECETA INTELIGENTE --- */}
+                                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                    <h5 className="font-bold text-blue-800 mb-3 flex items-center">
+                                        <span className="mr-2">💊</span>{" "}
+                                        Prescripción de Farmacia
+                                    </h5>
+
+                                    {/* Inputs para agregar */}
+                                    <div className="flex gap-2 mb-3">
+                                        <div className="flex-1">
+                                            <select
+                                                className="w-full border-gray-300 rounded-md text-sm"
+                                                value={medicinaTemp.id}
+                                                onChange={(e) =>
+                                                    setMedicinaTemp({
+                                                        ...medicinaTemp,
+                                                        id: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                <option value="">
+                                                    -- Seleccionar Medicamento
+                                                    --
+                                                </option>
+                                                {inventario.map((m) => (
+                                                    <option
+                                                        key={m.id}
+                                                        value={m.id}
+                                                    >
+                                                        {m.nombre} (Stock:{" "}
+                                                        {m.stock}) -{" "}
+                                                        {m.laboratorio}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="w-20">
+                                            <TextInput
+                                                type="number"
+                                                placeholder="Cant."
+                                                className="w-full text-sm"
+                                                value={medicinaTemp.cantidad}
+                                                onChange={(e) =>
+                                                    setMedicinaTemp({
+                                                        ...medicinaTemp,
+                                                        cantidad:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <TextInput
+                                                placeholder="Dosis (ej: c/8h)"
+                                                className="w-full text-sm"
+                                                value={medicinaTemp.dosis}
+                                                onChange={(e) =>
+                                                    setMedicinaTemp({
+                                                        ...medicinaTemp,
+                                                        dosis: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={agregarMedicina}
+                                            className="bg-blue-600 text-white px-3 rounded hover:bg-blue-700 font-bold"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+
+                                    {/* Lista de agregados */}
+                                    {data.receta.length > 0 ? (
+                                        <ul className="bg-white rounded border divide-y">
+                                            {data.receta.map((item, index) => (
+                                                <li
+                                                    key={index}
+                                                    className="p-2 text-sm flex justify-between items-center"
+                                                >
+                                                    <span>
+                                                        <span className="font-bold">
+                                                            {item.cantidad}x
+                                                        </span>{" "}
+                                                        {item.nombre}
+                                                        <span className="text-gray-500 italic ml-2">
+                                                            ({item.dosis})
+                                                        </span>
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            quitarMedicina(
+                                                                index
+                                                            )
+                                                        }
+                                                        className="text-red-500 hover:text-red-700 font-bold"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 italic text-center">
+                                            No hay medicamentos agregados.
+                                        </p>
+                                    )}
+                                </div>
+                                {/* ------------------------------------------- */}
+
+                                <div className="mb-4">
                                     <InputLabel
-                                        value="3. Plan de Tratamiento"
+                                        value="3. Indicaciones Generales / Tratamiento Adicional"
                                         className="font-bold text-gray-700"
                                     />
                                     <textarea
-                                        className="w-full bg-blue-50 border-blue-200 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 h-32 mt-1 font-mono text-sm"
-                                        placeholder="Medicamentos, dosis e indicaciones..."
+                                        className="w-full border-gray-300 rounded-md shadow-sm h-24 mt-1"
+                                        placeholder="Ej: Reposo, dieta blanda, etc."
                                         value={data.tratamiento}
                                         onChange={(e) =>
                                             setData(
@@ -118,102 +261,63 @@ export default function Atender({ auth, cita, historialPrevio }) {
                                     <InputError message={errors.tratamiento} />
                                 </div>
 
-                                {/* 4. Archivo Adjunto */}
-                                <div className="mb-6">
-                                    <InputLabel
-                                        value="4. Adjuntar Estudios (PDF/Imagen)"
-                                        className="text-lg text-indigo-700 font-bold mb-2"
-                                    />
-                                    <div className="mt-1 flex items-center">
-                                        <input
-                                            type="file"
-                                            className="block w-full text-sm text-gray-500
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-blue-50 file:text-blue-700
-                                            hover:file:bg-blue-100"
-                                            onChange={(e) =>
-                                                setData(
-                                                    "archivo",
-                                                    e.target.files[0]
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Formatos: PDF, JPG, PNG. Máx 2MB.
-                                    </p>
-                                    <InputError
-                                        message={errors.archivo}
-                                        className="mt-2"
-                                    />
-                                </div>
-
                                 <div className="flex justify-end pt-4">
                                     <PrimaryButton
-                                        className="bg-blue-600 hover:bg-blue-700 w-full justify-center py-3 text-lg"
+                                        className="bg-green-600 hover:bg-green-700 text-lg px-6 py-3"
                                         disabled={processing}
                                     >
-                                        <i className="fas fa-save mr-2"></i>{" "}
-                                        Guardar y Finalizar
+                                        Finalizar Consulta
                                     </PrimaryButton>
                                 </div>
                             </form>
                         </div>
                     </div>
 
-                    {/* COLUMNA DERECHA: HISTORIAL */}
+                    {/* COLUMNA DERECHA: HISTORIAL (Igual que antes) */}
                     <div className="lg:col-span-1">
-                        <div className="bg-gray-50 p-4 rounded-lg shadow-inner max-h-screen overflow-y-auto">
-                            <h4 className="text-gray-500 uppercase tracking-widest text-xs font-bold mb-4">
-                                Expediente Histórico
+                        {/* ... Aquí puedes dejar el historial previo como estaba ... */}
+                        <div className="bg-gray-50 p-4 rounded-lg shadow-inner">
+                            <h4 className="text-gray-500 uppercase font-bold mb-4 text-xs">
+                                Expediente
                             </h4>
-
-                            {historialPrevio.length > 0 ? (
-                                <div className="space-y-4">
-                                    {historialPrevio.map((hist) => (
-                                        <div
-                                            key={hist.id}
-                                            className="bg-white p-4 rounded border border-gray-200 shadow-sm text-sm hover:border-blue-300 transition"
-                                        >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="font-bold text-gray-700">
-                                                    {new Date(
-                                                        hist.created_at
-                                                    ).toLocaleDateString()}
-                                                </span>
-                                                <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">
-                                                    Dr. {hist.medico.user.name}
-                                                </span>
-                                            </div>
-                                            <div className="mb-2">
-                                                <strong className="text-blue-600 text-xs uppercase">
-                                                    Diagnóstico:
-                                                </strong>
-                                                <p className="text-gray-800 line-clamp-2">
-                                                    {hist.diagnostico}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <strong className="text-green-600 text-xs uppercase">
-                                                    Tratamiento:
-                                                </strong>
-                                                <p className="text-gray-500 truncate">
-                                                    {hist.tratamiento}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-10 text-gray-400 border-2 border-dashed border-gray-200 rounded">
-                                    <p>Primer consulta del paciente.</p>
-                                    <p className="text-xs">
-                                        No hay registros previos.
-                                    </p>
-                                </div>
+                            {historialPrevio.length === 0 && (
+                                <p className="text-gray-400 text-center text-sm">
+                                    Sin historial.
+                                </p>
                             )}
+                            {historialPrevio.map((h) => (
+                                <div
+                                    key={h.id}
+                                    className="bg-white p-3 mb-3 rounded shadow-sm text-sm border-l-4 border-gray-300"
+                                >
+                                    <div className="font-bold text-gray-800">
+                                        {new Date(
+                                            h.created_at
+                                        ).toLocaleDateString()}
+                                    </div>
+                                    <div className="text-gray-600">
+                                        {h.diagnostico}
+                                    </div>
+
+                                    {/* Mostrar medicinas recetadas antes */}
+                                    {h.medicamentos &&
+                                        h.medicamentos.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-dashed">
+                                                <p className="text-xs font-bold text-blue-600">
+                                                    Rx:
+                                                </p>
+                                                <ul className="list-disc pl-4 text-xs text-gray-500">
+                                                    {h.medicamentos.map((m) => (
+                                                        <li key={m.id}>
+                                                            {m.nombre} (
+                                                            {m.pivot.cantidad})
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
