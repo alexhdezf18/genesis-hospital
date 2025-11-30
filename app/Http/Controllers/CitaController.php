@@ -137,4 +137,41 @@ class CitaController extends Controller
 
         return back()->with('success', 'Estado de la cita actualizado.');
     }
+
+    // Método para devolver citas en formato JSON para FullCalendar
+    public function getEvents()
+    {
+        $citas = Cita::with(['paciente', 'medico.user'])
+            ->where('estado', '!=', 'cancelada')
+            ->get();
+
+        $eventos = $citas->map(function ($cita) {
+            // Definir color según estado
+            $color = match ($cita->estado) {
+                'pendiente' => '#f59e0b', // Amarillo
+                'confirmada' => '#3b82f6', // Azul
+                'completada' => '#10b981', // Verde
+                default => '#6b7280',
+            };
+
+            return [
+                'id' => $cita->id,
+                'title' => $cita->paciente->name . ' (Dr. ' . $cita->medico->user->name . ')',
+                'start' => $cita->fecha_cita . 'T' . $cita->hora_cita, // Formato ISO 8601
+                'backgroundColor' => $color,
+                'borderColor' => $color,
+                'extendedProps' => [
+                    'medico' => $cita->medico->user->name,
+                    'estado' => $cita->estado
+                ]
+            ];
+        });
+
+        return response()->json($eventos);
+    }
+
+    public function calendarView()
+    {
+        return Inertia::render('Admin/Calendario');
+    }
 }

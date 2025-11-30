@@ -8,6 +8,7 @@ import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
+import { Link } from "@inertiajs/react";
 
 export default function Citas({ auth, citas, pacientes, medicos }) {
     const [showModal, setShowModal] = useState(false);

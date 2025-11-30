@@ -50,6 +50,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Modulo de Paciente ---
     Route::get('/mi-portal/agendar', [CitaController::class, 'createForPatient'])->name('paciente.agendar');
     Route::post('/mi-portal/agendar', [CitaController::class, 'storeForPatient'])->name('paciente.store');
+
+    // --- API interna para el calendario ---
+    Route::get('/api/citas-calendar', [CitaController::class, 'getEvents'])->name('api.citas');
+    Route::get('/admin/calendario', [CitaController::class, 'calendarView'])->name('citas.calendar');
 });
 
 
