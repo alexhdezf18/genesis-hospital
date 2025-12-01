@@ -63,8 +63,40 @@
     <div class="section-title">TRATAMIENTO (Rx)</div>
     <div class="content">
         <span class="rx-symbol">℞</span>
-        <br>
-        {!! nl2br(e($historial->tratamiento)) !!}
+        
+        @if($historial->medicamentos->count() > 0)
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="text-align: left; padding: 5px; font-size: 12px; border-bottom: 1px solid #ccc;">Medicamento</th>
+                        <th style="text-align: center; padding: 5px; font-size: 12px; border-bottom: 1px solid #ccc;">Cant.</th>
+                        <th style="text-align: left; padding: 5px; font-size: 12px; border-bottom: 1px solid #ccc;">Indicación / Dosis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($historial->medicamentos as $med)
+                    <tr>
+                        <td style="padding: 5px; border-bottom: 1px solid #eee; font-size: 12px;">
+                            <strong>{{ $med->nombre }}</strong>
+                            <br>
+                            <span style="color: #666; font-size: 10px;">{{ $med->laboratorio }}</span>
+                        </td>
+                        <td style="text-align: center; padding: 5px; border-bottom: 1px solid #eee; font-size: 12px;">
+                            {{ $med->pivot->cantidad }}
+                        </td>
+                        <td style="padding: 5px; border-bottom: 1px solid #eee; font-size: 12px; font-family: monospace;">
+                            {{ $med->pivot->dosis }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
+        <div style="margin-top: 10px;">
+            <strong>Indicaciones Generales:</strong><br>
+            {!! nl2br(e($historial->tratamiento)) !!}
+        </div>
     </div>
 
     <div class="signature">

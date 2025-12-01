@@ -60,6 +60,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Calendario ---
     Route::get('/api/citas-calendar', [CitaController::class, 'getEvents'])->name('api.citas');
     Route::get('/admin/calendario', [CitaController::class, 'calendarView'])->name('citas.calendar');
+
+    // --- Excel ---
+    Route::get('/admin/reportes/excel', [PagoController::class, 'exportarExcel'])->name('reportes.excel');
 });
 
 // 4. Grupo de Perfil (Configuración de cuenta de usuario)

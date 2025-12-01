@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Pago;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PagosExport;
 
 class PagoController extends Controller
 {
@@ -18,5 +20,10 @@ class PagoController extends Controller
         Pago::create($request->all());
 
         return redirect()->back()->with('success', 'Pago registrado exitosamente. 💰');
+    }
+
+    public function exportarExcel()
+    {
+        return Excel::download(new PagosExport, 'reporte_ingresos_' . date('Y-m-d') . '.xlsx');
     }
 }

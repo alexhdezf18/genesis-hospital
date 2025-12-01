@@ -136,16 +136,29 @@ export default function AdminDashboard({ auth, stats, charts }) {
                                     Gestión del Sistema
                                 </h3>
                                 <p className="text-sm text-gray-500">
-                                    Administra usuarios, médicos y roles desde
-                                    aquí.
+                                    Administra usuarios, médicos y reportes
+                                    desde aquí.
                                 </p>
                             </div>
-                            <Link
-                                href={route("users.index")}
-                                className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition"
-                            >
-                                Ir a Usuarios →
-                            </Link>
+
+                            <div className="flex gap-3">
+                                {/* 1. Botón Descargar Excel */}
+                                <a
+                                    href={route("reportes.excel")}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center transition"
+                                >
+                                    <span className="mr-2">📊</span> Descargar
+                                    Excel
+                                </a>
+
+                                <Link
+                                    href={route("users.index")}
+                                    className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition"
+                                >
+                                    Ir a Usuarios →
+                                </Link>
+                            </div>
+                            {/* ---------------------------------- */}
                         </div>
                     </div>
                 </div>
