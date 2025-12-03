@@ -16,6 +16,11 @@ export default function Atender({ auth, cita, historialPrevio, inventario }) {
 
     const { data, setData, post, processing, errors } = useForm({
         cita_id: cita.id,
+        peso: "",
+        altura: "",
+        presion: "",
+        temperatura: "",
+        frecuencia_cardiaca: "",
         sintomas: "",
         diagnostico: "",
         tratamiento: "", // Texto general
@@ -54,6 +59,19 @@ export default function Atender({ auth, cita, historialPrevio, inventario }) {
         e.preventDefault();
         post(route("consulta.store"));
     };
+
+    // Calcular IMC en tiempo real
+    const imc =
+        data.peso && data.altura
+            ? (data.peso / (data.altura * data.altura)).toFixed(1)
+            : "0.0";
+
+    const imcColor =
+        imc > 25
+            ? "text-red-500"
+            : imc < 18.5
+            ? "text-yellow-500"
+            : "text-green-500";
 
     return (
         <AuthenticatedLayout
@@ -96,6 +114,100 @@ export default function Atender({ auth, cita, historialPrevio, inventario }) {
                             </h4>
 
                             <form onSubmit={handleSubmit}>
+                                {/* --- SECCIÓN DE SIGNOS VITALES --- */}
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+                                    <h5 className="font-bold text-slate-700 mb-3 flex items-center">
+                                        <span className="mr-2">❤️</span> Signos
+                                        Vitales
+                                    </h5>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                        <div>
+                                            <InputLabel
+                                                value="Peso (kg)"
+                                                className="text-xs"
+                                            />
+                                            <TextInput
+                                                type="number"
+                                                step="0.1"
+                                                className="w-full text-sm"
+                                                value={data.peso}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "peso",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputLabel
+                                                value="Altura (m)"
+                                                className="text-xs"
+                                            />
+                                            <TextInput
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full text-sm"
+                                                placeholder="1.70"
+                                                value={data.altura}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "altura",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputLabel
+                                                value="Temp (°C)"
+                                                className="text-xs"
+                                            />
+                                            <TextInput
+                                                type="number"
+                                                step="0.1"
+                                                className="w-full text-sm"
+                                                value={data.temperatura}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "temperatura",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputLabel
+                                                value="Presión (BPM)"
+                                                className="text-xs"
+                                            />
+                                            <TextInput
+                                                type="text"
+                                                className="w-full text-sm"
+                                                placeholder="120/80"
+                                                value={data.presion}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        "presion",
+                                                        e.target.value
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                        {/* IMC AUTOMÁTICO */}
+                                        <div className="bg-white border rounded p-1 text-center flex flex-col justify-center">
+                                            <span className="text-xs text-gray-400 font-bold uppercase">
+                                                IMC Calc
+                                            </span>
+                                            <span
+                                                className={`text-lg font-bold ${imcColor}`}
+                                            >
+                                                {imc}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* --------------------------------- */}
                                 {/* Campos de Texto (Síntomas, Diagnóstico) */}
                                 <div className="mb-4">
                                     <InputLabel

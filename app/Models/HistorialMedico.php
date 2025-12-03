@@ -13,10 +13,15 @@ class HistorialMedico extends Model
         'cita_id',
         'paciente_id',
         'medico_id',
+        'peso',
+        'altura',
+        'presion',
+        'temperatura',
+        'frecuencia_cardiaca',
         'sintomas',
         'diagnostico',
         'tratamiento',
-        'file_path', 
+        'file_path',
     ];
 
     // Relación con la Cita original

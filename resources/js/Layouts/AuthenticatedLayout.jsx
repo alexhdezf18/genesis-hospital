@@ -3,12 +3,13 @@ import Dropdown from "@/Components/Dropdown";
 import NavLink from "@/Components/NavLink";
 import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
 import { Link, usePage } from "@inertiajs/react";
-import { useState, useEffect } from "react"; // Agregamos useEffect
-import { Toaster, toast } from "react-hot-toast"; // Importamos la librería
+import { useState, useEffect } from "react";
+import { Toaster, toast } from "react-hot-toast";
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
     const { flash = {} } = usePage().props;
+    const unreadCount = usePage().props.auth.notificationsCount;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -123,6 +124,34 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
                             </div>
+                        </div>
+
+                        {/* --- CAMPANA DE NOTIFICACIONES --- */}
+                        <div className="flex items-center mr-4">
+                            <Link
+                                href={route("notifications.index")}
+                                className="relative text-gray-500 hover:text-gray-700 transition"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-6 w-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                                    />
+                                </svg>
+
+                                {/* Puntito rojo si hay notificaciones */}
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white bg-red-500 transform translate-x-1/2 -translate-y-1/2"></span>
+                                )}
+                            </Link>
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
