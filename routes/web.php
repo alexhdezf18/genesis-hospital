@@ -85,6 +85,10 @@ Route::middleware('auth')->group(function () {
 
     // API para buscar pacientes (CORREGIDO: Usa UserController)
     Route::get('/api/pacientes/buscar', [UserController::class, 'search'])->name('api.pacientes.search');
+
+    // APIs para el agendamiento inteligente
+    Route::get('/api/medicos-por-especialidad', [CitaController::class, 'getMedicosByEspecialidad'])->name('api.medicos.filter');
+    Route::get('/api/horarios-disponibles', [CitaController::class, 'getAvailableSlots'])->name('api.slots');
 });
 
 require __DIR__.'/auth.php';

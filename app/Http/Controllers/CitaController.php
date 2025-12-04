@@ -27,10 +27,13 @@ class CitaController extends Controller
         
         $medicos = Medico::with('user')->get();
 
+        $especialidades = Medico::select('specialty')->distinct()->pluck('specialty');
+
         return Inertia::render('Admin/Citas', [
             'citas' => $citas,
             'pacientes' => $pacientes,
-            'medicos' => $medicos
+            'medicos' => $medicos,
+            'especialidades' => $especialidades
         ]);
     }
 
@@ -107,11 +110,11 @@ class CitaController extends Controller
     // 1. Mostrar formulario simple para paciente
     public function createForPatient()
     {
-        // Solo enviamos la lista de médicos (con sus nombres de usuario)
-        $medicos = Medico::with('user')->get();
+        // Obtenemos solo las especialidades únicas que existen en la BD
+        $especialidades = Medico::select('specialty')->distinct()->pluck('specialty');
 
         return Inertia::render('Paciente/Agendar', [
-            'medicos' => $medicos
+            'especialidades' => $especialidades
         ]);
     }
 
@@ -204,5 +207,58 @@ class CitaController extends Controller
     public function calendarView()
     {
         return Inertia::render('Admin/Calendario');
+    }
+
+    // --- API: Obtener médicos por especialidad ---
+    public function getMedicosByEspecialidad(Request $request)
+    {
+        $especialidad = $request->query('especialidad');
+        
+        $medicos = Medico::with('user')
+            ->where('specialty', $especialidad)
+            ->get();
+            
+        return response()->json($medicos);
+    }
+
+    // --- API: Calcular horarios disponibles (Slots) ---
+    public function getAvailableSlots(Request $request)
+    {
+        $request->validate([
+            'medico_id' => 'required|exists:medicos,id',
+            'fecha' => 'required|date',
+        ]);
+
+        $medicoId = $request->medico_id;
+        $fecha = $request->fecha;
+
+        // 1. Definir horario laboral (Ej: 9:00 AM a 5:00 PM)
+        $horaInicio = 9;
+        $horaFin = 17;
+        $intervalo = 60; // Citas de 60 minutos
+
+        // 2. Obtener citas YA ocupadas para ese médico en esa fecha
+        $citasOcupadas = Cita::where('medico_id', $medicoId)
+            ->whereDate('fecha_cita', $fecha)
+            ->where('estado', '!=', 'cancelada')
+            ->pluck('hora_cita') // Obtenemos solo las horas (ej: ["09:00:00", "14:00:00"])
+            ->map(function($hora) {
+                return substr($hora, 0, 5); // Convertir "09:00:00" a "09:00"
+            })
+            ->toArray();
+
+        // 3. Generar todos los slots posibles y filtrar los ocupados
+        $slotsDisponibles = [];
+        
+        for ($h = $horaInicio; $h < $horaFin; $h++) {
+            $horaFormato = sprintf('%02d:00', $h); // Ej: "09:00", "10:00"
+            
+            // Si la hora NO está en la lista de ocupadas, la agregamos
+            if (!in_array($horaFormato, $citasOcupadas)) {
+                $slotsDisponibles[] = $horaFormato;
+            }
+        }
+
+        return response()->json($slotsDisponibles);
     }
 }
