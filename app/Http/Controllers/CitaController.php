@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\CitaConfirmada;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB; 
+use Illuminate\Validation\ValidationException;
 
 class CitaController extends Controller
 {
@@ -33,44 +36,72 @@ class CitaController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validar que venga el ID del paciente seleccionado
         $request->validate([
-            'paciente_id' => 'required|exists:users,id', // <--- Importante validar esto
             'medico_id' => 'required|exists:medicos,id',
             'fecha_cita' => 'required|date|after_or_equal:today',
             'hora_cita' => 'required',
-            'observaciones' => 'nullable|string'
+            'modo_paciente' => 'required|in:existente,nuevo',
         ]);
 
-        // 2. Validación de Disponibilidad
-        $existe = Cita::where('medico_id', $request->medico_id)
-                      ->where('fecha_cita', $request->fecha_cita)
-                      ->where('hora_cita', $request->hora_cita)
-                      ->where('estado', '!=', 'cancelada')
-                      ->exists();
+        DB::transaction(function () use ($request) {
+            
+            $pacienteId = null;
 
-        if ($existe) {
-            return back()->withErrors(['hora_cita' => 'El médico ya tiene una cita agendada en ese horario.']);
-        }
+            // 1. Resolver quién es el paciente
+            if ($request->modo_paciente === 'existente') {
+                $request->validate(['paciente_id' => 'required|exists:users,id']);
+                $pacienteId = $request->paciente_id;
+            } else {
+                $request->validate([
+                    'nuevo_nombre' => 'required|string',
+                    'nuevo_email' => 'required|email|unique:users,email',
+                    'nuevo_telefono' => 'required|string',
+                ]);
 
-        // 3. CREAR LA CITA (Aquí estaba el error)
-        $cita = Cita::create([
-            'paciente_id' => $request->paciente_id, // <--- CORREGIDO: Usamos el ID del formulario, NO auth()->id()
-            'medico_id' => $request->medico_id,
-            'fecha_cita' => $request->fecha_cita,
-            'hora_cita' => $request->hora_cita,
-            'observaciones' => $request->observaciones,
-            'estado' => 'pendiente'
-        ]);
+                $nuevoPaciente = User::create([
+                    'name' => $request->nuevo_nombre,
+                    'email' => $request->nuevo_email,
+                    'phone' => $request->nuevo_telefono,
+                    'role' => 'paciente',
+                    'password' => Hash::make($request->nuevo_telefono),
+                    'is_active' => true
+                ]);
+                
+                $pacienteId = $nuevoPaciente->id;
+            }
 
-        // 4. Enviar correo al paciente real
-        $paciente = User::find($request->paciente_id);
-        
-        if ($paciente) {
-            Mail::to($paciente->email)->send(new CitaConfirmada($cita));
-        }
+            // 2. Validación de Disponibilidad
+            $existe = Cita::where('medico_id', $request->medico_id)
+                        ->where('fecha_cita', $request->fecha_cita)
+                        ->where('hora_cita', $request->hora_cita)
+                        ->where('estado', '!=', 'cancelada')
+                        ->exists();
 
-        return redirect()->back()->with('success', 'Cita agendada y notificación enviada.');
+            if ($existe) {
+                // --- AQUÍ ESTABA EL ERROR (Quitamos el 'new') ---
+                throw ValidationException::withMessages([
+                    'hora_cita' => 'El médico ya tiene una cita agendada en ese horario.'
+                ]);
+            }
+
+            // 3. Crear la Cita
+            $cita = Cita::create([
+                'paciente_id' => $pacienteId,
+                'medico_id' => $request->medico_id,
+                'fecha_cita' => $request->fecha_cita,
+                'hora_cita' => $request->hora_cita,
+                'observaciones' => $request->observaciones,
+                'estado' => 'pendiente'
+            ]);
+
+            // 4. Enviar correo
+            $paciente = User::find($pacienteId);
+            if ($paciente) {
+                Mail::to($paciente->email)->send(new CitaConfirmada($cita));
+            }
+        });
+
+        return redirect()->back()->with('success', 'Cita agendada correctamente.');
     }
 
     // 1. Mostrar formulario simple para paciente

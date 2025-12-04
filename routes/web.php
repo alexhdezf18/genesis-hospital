@@ -33,13 +33,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Módulo de Usuarios ---
     Route::get('/admin/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/admin/users', [UserController::class, 'store'])->name('users.store');
+    
+    // --- RUTAS PARA EDITAR Y BORRAR ---
+    Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // --- Módulo de Citas ---
     Route::get('/admin/citas', [CitaController::class, 'index'])->name('citas.index');
     Route::post('/admin/citas', [CitaController::class, 'store'])->name('citas.store');
     Route::patch('/citas/{id}/status', [CitaController::class, 'updateStatus'])->name('citas.updateStatus');
 
-    // --- Módulo de Farmacia / Medicamentos (MOVIDO AQUÍ) ---
+    // --- Módulo de Farmacia / Medicamentos ---
     Route::get('/admin/farmacia', [MedicamentoController::class, 'index'])->name('medicamentos.index');
     Route::post('/admin/farmacia', [MedicamentoController::class, 'store'])->name('medicamentos.store');
 
@@ -71,14 +75,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Notificaciones
     Route::get('/notificaciones', function () {
-        // Marcamos como leídas al entrar
         auth()->user()->unreadNotifications->markAsRead();
-    
         return Inertia::render('Notifications', [
             'notifications' => auth()->user()->notifications
         ]);
     })->name('notifications.index');
+
+    // API para buscar pacientes (CORREGIDO: Usa UserController)
+    Route::get('/api/pacientes/buscar', [UserController::class, 'search'])->name('api.pacientes.search');
 });
 
 require __DIR__.'/auth.php';

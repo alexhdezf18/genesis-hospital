@@ -1,47 +1,98 @@
 import { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm } from "@inertiajs/react";
-import Modal from "@/Components/Modal"; // Componente de Modal que trae Breeze
-import InputError from "@/Components/InputError"; // Componentes pre-hechos de Breeze
+import { Head, useForm, router, Link } from "@inertiajs/react";
+import Modal from "@/Components/Modal";
+import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
-import { router } from "@inertiajs/react";
-import { Link } from "@inertiajs/react";
 
 export default function Users({ auth, users, filters }) {
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false); // Estado para saber si editamos
+    const [editUserId, setEditUserId] = useState(null); // ID del usuario a editar
 
-    // useForm maneja los datos, el envío y los errores automáticamente
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: "",
-        email: "",
-        password: "",
-        role: "paciente",
-        phone: "",
-        specialty: "", // Solo para médicos
-        license_number: "", // Solo para médicos
-    });
+    const { data, setData, post, put, processing, errors, reset, clearErrors } =
+        useForm({
+            name: "",
+            email: "",
+            password: "",
+            role: "paciente",
+            phone: "",
+            specialty: "",
+            license_number: "",
+        });
+
+    // Abrir modal para CREAR
+    const openCreateModal = () => {
+        setIsEditing(false);
+        setEditUserId(null);
+        reset();
+        clearErrors();
+        setShowModal(true);
+    };
+
+    // Abrir modal para EDITAR
+    const openEditModal = (user) => {
+        setIsEditing(true);
+        setEditUserId(user.id);
+
+        setData({
+            name: user.name,
+            email: user.email,
+            password: "", // Password vacío por seguridad
+            role: user.role,
+            phone: user.phone || "",
+            specialty: user.medico?.specialty || "",
+            license_number: user.medico?.license_number || "",
+        });
+
+        clearErrors();
+        setShowModal(true);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route("users.store"), {
-            onSuccess: () => {
-                setShowModal(false);
-                reset();
-            },
-        });
+
+        if (isEditing) {
+            // Lógica de ACTUALIZAR (PUT)
+            put(route("users.update", editUserId), {
+                onSuccess: () => {
+                    setShowModal(false);
+                    reset();
+                },
+            });
+        } else {
+            // Lógica de CREAR (POST)
+            post(route("users.store"), {
+                onSuccess: () => {
+                    setShowModal(false);
+                    reset();
+                },
+            });
+        }
+    };
+
+    // Función para BORRAR
+    const deleteUser = (user) => {
+        if (
+            confirm(
+                `¿Estás seguro de eliminar a ${user.name}? Esta acción no se puede deshacer.`
+            )
+        ) {
+            router.delete(route("users.destroy", user.id));
+        }
     };
 
     const handleSearch = (e) => {
         const value = e.target.value;
         router.get(
             route("users.index"),
-            { search: value }, // Enviamos el parámetro 'search'
+            { search: value },
             {
-                preserveState: true, // No perder el estado (como el modal abierto)
-                replace: true, // No llenar el historial del navegador
+                preserveState: true,
+                replace: true,
             }
         );
     };
@@ -59,48 +110,52 @@ export default function Users({ auth, users, filters }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* BARRA DE HERRAMIENTAS (Búsqueda + Botón) */}
                     <div className="flex justify-between items-center mb-4">
-                        {/* Input de Búsqueda */}
                         <div className="w-1/3">
                             <TextInput
                                 type="text"
                                 className="w-full"
                                 placeholder="Buscar por nombre o email..."
-                                defaultValue={filters.search} // Mantiene el texto si recargas
+                                defaultValue={filters.search}
                                 onChange={handleSearch}
                             />
                         </div>
-
-                        <PrimaryButton onClick={() => setShowModal(true)}>
+                        <PrimaryButton onClick={openCreateModal}>
                             + Nuevo Usuario
                         </PrimaryButton>
                     </div>
 
-                    {/* Tabla de Usuarios */}
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                         Nombre
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                         Email
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                         Rol
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Detalles
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Acciones
                                     </th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {users.data.map((user) => (
-                                    <tr key={user.id}>
+                                    <tr
+                                        key={user.id}
+                                        className="hover:bg-gray-50"
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {user.name}
+                                            <div className="font-bold">
+                                                {user.name}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {user.phone}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {user.email}
@@ -113,23 +168,42 @@ export default function Users({ auth, users, filters }) {
                                                         ? "bg-red-100 text-red-800"
                                                         : user.role === "medico"
                                                         ? "bg-green-100 text-green-800"
+                                                        : user.role ===
+                                                          "recepcionista"
+                                                        ? "bg-yellow-100 text-yellow-800"
                                                         : "bg-blue-100 text-blue-800"
                                                 }`}
                                             >
                                                 {user.role.toUpperCase()}
                                             </span>
+                                            {user.medico && (
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {user.medico.specialty}
+                                                </div>
+                                            )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {user.medico
-                                                ? `Espec: ${user.medico.specialty}`
-                                                : "-"}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button
+                                                onClick={() =>
+                                                    openEditModal(user)
+                                                }
+                                                className="text-indigo-600 hover:text-indigo-900 mr-4 font-bold"
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                onClick={() => deleteUser(user)}
+                                                className="text-red-600 hover:text-red-900 font-bold"
+                                            >
+                                                Eliminar
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
 
-                        {/* Paginación simple */}
+                        {/* Paginación */}
                         <div className="p-4 bg-white border-t border-gray-200 flex justify-center">
                             {users.links.map((link, key) =>
                                 link.url ? (
@@ -148,7 +222,7 @@ export default function Users({ auth, users, filters }) {
                                 ) : (
                                     <span
                                         key={key}
-                                        className="px-3 py-1 border mx-1 rounded text-sm text-gray-400 cursor-not-allowed"
+                                        className="px-3 py-1 border mx-1 rounded text-sm text-gray-400"
                                         dangerouslySetInnerHTML={{
                                             __html: link.label,
                                         }}
@@ -160,16 +234,17 @@ export default function Users({ auth, users, filters }) {
                 </div>
             </div>
 
-            {/* MODAL DE CREACIÓN */}
+            {/* MODAL (Reutilizado para Crear y Editar) */}
             <Modal show={showModal} onClose={() => setShowModal(false)}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 mb-4">
-                        Registrar Nuevo Usuario
+                        {isEditing
+                            ? "Editar Usuario"
+                            : "Registrar Nuevo Usuario"}
                     </h2>
 
                     <form onSubmit={handleSubmit}>
                         <div className="grid grid-cols-2 gap-4">
-                            {/* Nombre */}
                             <div className="col-span-1">
                                 <InputLabel value="Nombre" />
                                 <TextInput
@@ -186,7 +261,6 @@ export default function Users({ auth, users, filters }) {
                                 />
                             </div>
 
-                            {/* Email */}
                             <div className="col-span-1">
                                 <InputLabel value="Email" />
                                 <TextInput
@@ -204,9 +278,14 @@ export default function Users({ auth, users, filters }) {
                                 />
                             </div>
 
-                            {/* Password */}
                             <div className="col-span-1">
-                                <InputLabel value="Contraseña" />
+                                <InputLabel
+                                    value={
+                                        isEditing
+                                            ? "Contraseña (Opcional)"
+                                            : "Contraseña"
+                                    }
+                                />
                                 <TextInput
                                     type="password"
                                     value={data.password}
@@ -214,7 +293,12 @@ export default function Users({ auth, users, filters }) {
                                         setData("password", e.target.value)
                                     }
                                     className="mt-1 block w-full"
-                                    required
+                                    required={!isEditing} // Solo obligatoria al crear
+                                    placeholder={
+                                        isEditing
+                                            ? "Dejar vacío para no cambiar"
+                                            : ""
+                                    }
                                 />
                                 <InputError
                                     message={errors.password}
@@ -222,7 +306,6 @@ export default function Users({ auth, users, filters }) {
                                 />
                             </div>
 
-                            {/* Rol (Select Nativo con estilos Tailwind) */}
                             <div className="col-span-1">
                                 <InputLabel value="Rol" />
                                 <select
@@ -240,11 +323,21 @@ export default function Users({ auth, users, filters }) {
                                     <option value="admin">Administrador</option>
                                 </select>
                             </div>
+
+                            <div className="col-span-2">
+                                <InputLabel value="Teléfono" />
+                                <TextInput
+                                    value={data.phone}
+                                    onChange={(e) =>
+                                        setData("phone", e.target.value)
+                                    }
+                                    className="mt-1 block w-full"
+                                />
+                            </div>
                         </div>
 
-                        {/* CAMPOS DINÁMICOS DE MÉDICO */}
                         {data.role === "medico" && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-200">
+                            <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-200 animate-fade-in">
                                 <h3 className="text-md font-bold text-gray-700 mb-2">
                                     Datos Profesionales
                                 </h3>
@@ -297,7 +390,7 @@ export default function Users({ auth, users, filters }) {
                                 className="ml-3"
                                 disabled={processing}
                             >
-                                Guardar
+                                {isEditing ? "Actualizar" : "Guardar"}
                             </PrimaryButton>
                         </div>
                     </form>
