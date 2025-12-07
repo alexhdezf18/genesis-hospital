@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Illuminate\Validation\Rule; // Importante para la validación de email único
+use Illuminate\Validation\Rule; 
 
 class UserController extends Controller
 {
@@ -124,7 +124,7 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Usuario actualizado correctamente.');
     }
 
-    // --- NUEVO: MÉTODO ELIMINAR ---
+    // MÉTODO ELIMINAR ---
     public function destroy(User $user)
     {
         // Evitar auto-suicidio (No borrar tu propia cuenta)
@@ -136,4 +136,24 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'Usuario eliminado correctamente.');
     }
+
+    // --- MÉTODO RECUPERADO PARA BÚSQUEDA EN VIVO ---
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+        
+        if (!$query) return response()->json([]);
+
+        $pacientes = User::where('role', 'paciente')
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('phone', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->limit(5)
+            ->get(['id', 'name', 'phone', 'email']);
+
+        return response()->json($pacientes);
+    }
+
 }

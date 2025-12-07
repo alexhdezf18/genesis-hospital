@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Crear el ADMINISTRADOR
         User::create([
-            'name' => 'Alex Admin',
+            'name' => 'Alejandro Hernandez',
             'email' => 'admin@hospital.com',
             'password' => Hash::make('password'), // Hash::make encripta la contraseña
             'role' => 'admin',
@@ -35,8 +35,8 @@ class DatabaseSeeder extends Seeder
         // 3. Crear MÉDICO 1 (Dr. House)
         // Primero creamos el usuario
         $medico1 = User::create([
-            'name' => 'Dr. Gregory House',
-            'email' => 'house@hospital.com',
+            'name' => 'Jared Vazquez',
+            'email' => 'jared@hospital.com',
             'password' => Hash::make('password'),
             'role' => 'medico',
             'is_active' => true,

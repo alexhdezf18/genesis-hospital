@@ -9,30 +9,37 @@ import TextInput from "@/Components/TextInput";
 import PrimaryButton from "@/Components/PrimaryButton";
 import SecondaryButton from "@/Components/SecondaryButton";
 
-export default function Citas({ auth, citas, medicos }) {
+// Recibimos 'especialidades' en lugar de 'medicos'
+export default function Citas({ auth, citas, especialidades }) {
     const [showModal, setShowModal] = useState(false);
 
-    // Estados para la búsqueda inteligente
+    // Estados para búsqueda de PACIENTE
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    // Estados para búsqueda de MÉDICO/HORARIO (Lo nuevo)
+    const [medicosFiltrados, setMedicosFiltrados] = useState([]);
+    const [horariosDisponibles, setHorariosDisponibles] = useState([]);
+    const [loadingHorarios, setLoadingHorarios] = useState(false);
+
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
-            modo_paciente: "existente", // 'existente' o 'nuevo'
+            modo_paciente: "existente",
             paciente_id: "",
-            // Campos para nuevo paciente
             nuevo_nombre: "",
             nuevo_email: "",
             nuevo_telefono: "",
-            // Campos de cita
+
+            // Campos de Cita Inteligente
+            especialidad: "",
             medico_id: "",
             fecha_cita: "",
             hora_cita: "",
             observaciones: "",
         });
 
-    // Lógica de Búsqueda en Vivo
+    // EFECTO 1: Buscar Pacientes
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             if (
@@ -50,15 +57,50 @@ export default function Citas({ auth, citas, medicos }) {
             } else {
                 setSearchResults([]);
             }
-        }, 300); // Esperar 300ms después de escribir
-
+        }, 300);
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, data.modo_paciente, data.paciente_id]);
+
+    // EFECTO 2: Cargar Médicos al cambiar Especialidad
+    useEffect(() => {
+        if (data.especialidad) {
+            fetch(
+                route("api.medicos.filter", { especialidad: data.especialidad })
+            )
+                .then((res) => res.json())
+                .then((medicos) => {
+                    setMedicosFiltrados(medicos);
+                    setData((prev) => ({
+                        ...prev,
+                        medico_id: "",
+                        hora_cita: "",
+                    })); // Reset
+                });
+        }
+    }, [data.especialidad]);
+
+    // EFECTO 3: Cargar Horarios (Slots)
+    useEffect(() => {
+        if (data.medico_id && data.fecha_cita) {
+            setLoadingHorarios(true);
+            fetch(
+                route("api.slots", {
+                    medico_id: data.medico_id,
+                    fecha: data.fecha_cita,
+                })
+            )
+                .then((res) => res.json())
+                .then((slots) => {
+                    setHorariosDisponibles(slots);
+                    setLoadingHorarios(false);
+                });
+        }
+    }, [data.medico_id, data.fecha_cita]);
 
     const seleccionarPaciente = (paciente) => {
         setData("paciente_id", paciente.id);
         setSearchTerm(`${paciente.name} (${paciente.phone || "Sin cel"})`);
-        setSearchResults([]); // Limpiar lista
+        setSearchResults([]);
         clearErrors();
     };
 
@@ -67,7 +109,7 @@ export default function Citas({ auth, citas, medicos }) {
             ...data,
             modo_paciente: modo,
             paciente_id: "",
-            nuevo_nombre: modo === "nuevo" ? searchTerm : "", // Si buscó "Juan", lo usamos para crear
+            nuevo_nombre: modo === "nuevo" ? searchTerm : "",
         });
         setSearchResults([]);
         if (modo === "existente") setSearchTerm("");
@@ -84,7 +126,6 @@ export default function Citas({ auth, citas, medicos }) {
         });
     };
 
-    // ... (La función cambiarEstado sigue igual) ...
     const cambiarEstado = (id, nuevoEstado) => {
         if (
             confirm(
@@ -222,17 +263,18 @@ export default function Citas({ auth, citas, medicos }) {
                 </div>
             </div>
 
-            {/* MODAL INTELIGENTE */}
+            {/* MODAL INTELIGENTE (Combinado) */}
             <Modal show={showModal} onClose={() => setShowModal(false)}>
-                <div className="p-6">
+                <div className="p-6 h-[80vh] overflow-y-auto">
+                    {" "}
+                    {/* Scroll si es muy largo */}
                     <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">
                         {data.modo_paciente === "existente"
-                            ? "Buscar Paciente"
-                            : "Registrar Nuevo Paciente"}
+                            ? "Paso 1: Identificar Paciente"
+                            : "Paso 1: Registrar Paciente"}
                     </h2>
-
                     <form onSubmit={handleSubmit}>
-                        {/* SWITCHER DE MODO */}
+                        {/* --- SECCIÓN 1: EL PACIENTE --- */}
                         <div className="flex mb-4 bg-gray-100 p-1 rounded-lg">
                             <button
                                 type="button"
@@ -258,9 +300,8 @@ export default function Citas({ auth, citas, medicos }) {
                             </button>
                         </div>
 
-                        {/* MODO: BUSCAR EXISTENTE */}
                         {data.modo_paciente === "existente" && (
-                            <div className="mb-4 relative">
+                            <div className="mb-6 relative">
                                 <InputLabel value="Buscar por Nombre o Teléfono" />
                                 <div className="relative">
                                     <TextInput
@@ -273,9 +314,9 @@ export default function Citas({ auth, citas, medicos }) {
                                         value={searchTerm}
                                         onChange={(e) => {
                                             setSearchTerm(e.target.value);
-                                            setData("paciente_id", ""); // Reset ID si edita
+                                            setData("paciente_id", "");
                                         }}
-                                        disabled={!!data.paciente_id} // Bloquear si ya seleccionó
+                                        disabled={!!data.paciente_id}
                                     />
                                     {data.paciente_id && (
                                         <button
@@ -290,8 +331,6 @@ export default function Citas({ auth, citas, medicos }) {
                                         </button>
                                     )}
                                 </div>
-
-                                {/* Lista de Resultados Flotante */}
                                 {searchResults.length > 0 &&
                                     !data.paciente_id && (
                                         <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-40 overflow-y-auto">
@@ -307,18 +346,12 @@ export default function Citas({ auth, citas, medicos }) {
                                                         {p.name}
                                                     </span>
                                                     <span className="text-gray-500 text-xs ml-2">
-                                                        ({p.phone || "Sin tel"}{" "}
-                                                        - {p.email})
+                                                        ({p.phone} - {p.email})
                                                     </span>
                                                 </li>
                                             ))}
                                         </ul>
                                     )}
-                                {isSearching && (
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        Buscando...
-                                    </p>
-                                )}
                                 <InputError
                                     message={errors.paciente_id}
                                     className="mt-2"
@@ -326,12 +359,11 @@ export default function Citas({ auth, citas, medicos }) {
                             </div>
                         )}
 
-                        {/* MODO: NUEVO PACIENTE */}
                         {data.modo_paciente === "nuevo" && (
-                            <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4 animate-fade-in-down">
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
                                 <div className="grid grid-cols-1 gap-3">
                                     <div>
-                                        <InputLabel value="Nombre Completo" />
+                                        <InputLabel value="Nombre" />
                                         <TextInput
                                             className="w-full"
                                             value={data.nuevo_nombre}
@@ -341,10 +373,6 @@ export default function Citas({ auth, citas, medicos }) {
                                                     e.target.value
                                                 )
                                             }
-                                            required
-                                        />
-                                        <InputError
-                                            message={errors.nuevo_nombre}
                                         />
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -359,10 +387,6 @@ export default function Citas({ auth, citas, medicos }) {
                                                         e.target.value
                                                     )
                                                 }
-                                                required
-                                            />
-                                            <InputError
-                                                message={errors.nuevo_telefono}
                                             />
                                         </div>
                                         <div>
@@ -377,56 +401,73 @@ export default function Citas({ auth, citas, medicos }) {
                                                         e.target.value
                                                     )
                                                 }
-                                                required
-                                            />
-                                            <InputError
-                                                message={errors.nuevo_email}
                                             />
                                         </div>
                                     </div>
-                                    <p className="text-xs text-green-700 mt-1">
-                                        ℹ️ Se creará una cuenta automáticamente
-                                        para este paciente.
-                                    </p>
                                 </div>
                             </div>
                         )}
 
-                        {/* CAMPOS DE CITA (COMUNES) */}
-                        <div className="border-t pt-4 mt-4">
-                            <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                Detalles de la Cita
-                            </h4>
-                            <div className="mt-4">
-                                <InputLabel value="Médico" />
+                        {/* --- SECCIÓN 2: LA CITA INTELIGENTE --- */}
+                        <div className="border-t pt-4">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">
+                                Paso 2: Detalles de la Cita
+                            </h2>
+
+                            {/* Especialidad */}
+                            <div className="mb-4">
+                                <InputLabel value="Especialidad" />
                                 <select
-                                    className="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    value={data.medico_id}
+                                    className="w-full border-gray-300 rounded-md"
+                                    value={data.especialidad}
                                     onChange={(e) =>
-                                        setData("medico_id", e.target.value)
+                                        setData("especialidad", e.target.value)
                                     }
                                 >
-                                    <option value="">
-                                        -- Seleccione... --
-                                    </option>
-                                    {medicos.map((m) => (
-                                        <option key={m.id} value={m.id}>
-                                            Dr. {m.user.name} - {m.specialty}
+                                    <option value="">-- Seleccionar --</option>
+                                    {especialidades.map((esp, i) => (
+                                        <option key={i} value={esp}>
+                                            {esp}
                                         </option>
                                     ))}
                                 </select>
-                                <InputError
-                                    message={errors.medico_id}
-                                    className="mt-2"
-                                />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-4">
-                                <div>
+                            {/* Médico (Cascada) */}
+                            {data.especialidad && (
+                                <div className="mb-4">
+                                    <InputLabel value="Médico" />
+                                    <select
+                                        className="w-full border-gray-300 rounded-md"
+                                        value={data.medico_id}
+                                        onChange={(e) =>
+                                            setData("medico_id", e.target.value)
+                                        }
+                                    >
+                                        <option value="">
+                                            -- Seleccionar Médico --
+                                        </option>
+                                        {medicosFiltrados.map((m) => (
+                                            <option key={m.id} value={m.id}>
+                                                Dr. {m.user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Fecha y Hora (Grid) */}
+                            {data.medico_id && (
+                                <div className="mb-4">
                                     <InputLabel value="Fecha" />
-                                    <TextInput
+                                    <input
                                         type="date"
-                                        className="w-full"
+                                        className="w-full border-gray-300 rounded-md mb-4"
+                                        min={
+                                            new Date()
+                                                .toISOString()
+                                                .split("T")[0]
+                                        }
                                         value={data.fecha_cita}
                                         onChange={(e) =>
                                             setData(
@@ -435,30 +476,59 @@ export default function Citas({ auth, citas, medicos }) {
                                             )
                                         }
                                     />
-                                    <InputError
-                                        message={errors.fecha_cita}
-                                        className="mt-2"
-                                    />
-                                </div>
-                                <div>
-                                    <InputLabel value="Hora" />
-                                    <TextInput
-                                        type="time"
-                                        className="w-full"
-                                        value={data.hora_cita}
-                                        onChange={(e) =>
-                                            setData("hora_cita", e.target.value)
-                                        }
-                                    />
+
+                                    {data.fecha_cita && (
+                                        <div className="bg-gray-50 p-3 rounded border">
+                                            <p className="text-xs font-bold text-gray-500 mb-2 uppercase">
+                                                Horarios Disponibles:
+                                            </p>
+                                            {loadingHorarios ? (
+                                                <p className="text-sm">
+                                                    Cargando...
+                                                </p>
+                                            ) : (
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {horariosDisponibles.map(
+                                                        (hora, i) => (
+                                                            <button
+                                                                key={i}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setData(
+                                                                        "hora_cita",
+                                                                        hora
+                                                                    )
+                                                                }
+                                                                className={`py-1 px-2 rounded text-sm transition ${
+                                                                    data.hora_cita ===
+                                                                    hora
+                                                                        ? "bg-blue-600 text-white"
+                                                                        : "bg-white border hover:bg-gray-100"
+                                                                }`}
+                                                            >
+                                                                {hora}
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            )}
+                                            {horariosDisponibles.length === 0 &&
+                                                !loadingHorarios && (
+                                                    <p className="text-red-500 text-sm">
+                                                        Sin horarios.
+                                                    </p>
+                                                )}
+                                        </div>
+                                    )}
                                     <InputError
                                         message={errors.hora_cita}
                                         className="mt-2"
                                     />
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="mt-4">
-                                <InputLabel value="Observaciones" />
+                            <div className="mt-2">
+                                <InputLabel value="Nota (Opcional)" />
                                 <TextInput
                                     className="w-full"
                                     value={data.observaciones}
@@ -477,11 +547,9 @@ export default function Citas({ auth, citas, medicos }) {
                             </SecondaryButton>
                             <PrimaryButton
                                 className="ml-3"
-                                disabled={processing}
+                                disabled={processing || !data.hora_cita}
                             >
-                                {data.modo_paciente === "nuevo"
-                                    ? "Registrar y Agendar"
-                                    : "Agendar Cita"}
+                                Agendar
                             </PrimaryButton>
                         </div>
                     </form>

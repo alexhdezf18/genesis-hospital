@@ -17,23 +17,21 @@ class CitaController extends Controller
 {
     public function index()
     {
-        // 1. Traer citas con datos relacionados (Paciente y Médico)
+        // 1. Traer citas
         $citas = Cita::with(['paciente', 'medico.user'])
                     ->latest('fecha_cita')
                     ->paginate(10);
 
-        // 2. Listas para los Selects del Formulario
+        // 2. Listas para los Selects
         $pacientes = User::where('role', 'paciente')->get(['id', 'name', 'email']);
         
-        $medicos = Medico::with('user')->get();
-
+        // 3. NUEVO: Traer especialidades para el filtro
         $especialidades = Medico::select('specialty')->distinct()->pluck('specialty');
 
         return Inertia::render('Admin/Citas', [
             'citas' => $citas,
             'pacientes' => $pacientes,
-            'medicos' => $medicos,
-            'especialidades' => $especialidades
+            'especialidades' => $especialidades, // <--- Enviamos esto a la vista
         ]);
     }
 
@@ -135,6 +133,17 @@ class CitaController extends Controller
                       ->where('estado', '!=', 'cancelada')
                       ->exists();
 
+                      /*
+                      $sql = "SELECT 1 FROM citas WHERE medico_id = ? AND fecha_cita = ? LIMIT 1";
+                      $stmt = $pdo->prepare($sql);
+
+                      $stmt->execute([
+                          $request->medico_id, 
+                          $request->fecha_cita 
+                      ]);
+                      $existe = $stmt->fetch();
+                     */
+                    
         if ($existe) {
             return back()->withErrors(['hora_cita' => 'El médico ya no está disponible a esa hora.']);
         }
