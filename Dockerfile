@@ -1,5 +1,5 @@
 # Usamos una imagen oficial de PHP con Apache
-FROM php:8.2-apache
+FROM php:8.3-apache
 
 # 1. Instalar dependencias del sistema y Node.js
 RUN apt-get update && apt-get install -y \
